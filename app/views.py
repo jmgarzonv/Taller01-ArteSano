@@ -12,6 +12,8 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.urls import reverse
+from app.wishlist.factory import get_wishlist_manager #para importar el patron factory
+
 
 # Vista para listar productos
 def lista_productos(request):
@@ -245,35 +247,23 @@ def productos_mas_vendidos(request):
         'productos_vendidos': productos_vendidos
     })
 
-def obtener_wishlist(request):
-    return request.session.get('wishlist', [])  # Obtener la wishlist desde la sesión
-
-def guardar_wishlist(request, wishlist):
-    request.session['wishlist'] = wishlist  # Guardar en la sesión
-    request.session.modified = True  # Asegurar que Django guarde los cambios
-
+#Funciones de wishlist a partir del patrón factory
 def agregar_a_wishlist(request, producto_id):
-    wishlist = obtener_wishlist(request)
-
-    if producto_id not in wishlist:
-        wishlist.append(producto_id)  # Agregar producto si no está en la lista
-
-    guardar_wishlist(request, wishlist)
+    manager = get_wishlist_manager(request)
+    manager.add(producto_id)
     return redirect('ver_wishlist')
 
 def eliminar_de_wishlist(request, producto_id):
-    wishlist = obtener_wishlist(request)
-
-    if producto_id in wishlist:
-        wishlist.remove(producto_id)  # Eliminar producto de la lista
-
-    guardar_wishlist(request, wishlist)
+    manager = get_wishlist_manager(request)
+    manager.remove(producto_id)
     return redirect('ver_wishlist')
 
 def ver_wishlist(request):
-    wishlist = obtener_wishlist(request)
-    productos = Producto.objects.filter(id__in=wishlist)  # Obtener productos guardados
+    manager = get_wishlist_manager(request)
+    wishlist = manager.get()
+    productos = Producto.objects.filter(id__in=wishlist)
     return render(request, 'productos/wishlist.html', {'productos': productos})
+
 
 def registro(request):
     if request.method == 'POST':
